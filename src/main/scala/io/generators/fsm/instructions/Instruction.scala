@@ -2,6 +2,7 @@ package io.generators.fsm.instructions
 
 import io.generators.fsm.instructions.Instruction.InstructionState
 import io.generators.fsm.instructions.Instruction.InstructionState._
+import io.generators.fsm.instructions.Instruction.InstructionState.Marker._
 
 
 class Instruction[S <: InstructionState] {
@@ -11,7 +12,7 @@ class Instruction[S <: InstructionState] {
     new Instruction
   }
 
-  def acknowledge[T >: S <: Acknowledgable] : Instruction[Instructed] = {
+  def acknowledge[T >: S <: Acknowledgeable] : Instruction[Instructed] = {
     println("acked")
     new Instruction
   }
@@ -21,7 +22,7 @@ class Instruction[S <: InstructionState] {
     new Instruction
   }
 
-  def nack[T >: S <: Acknowledgable] : Instruction[Failed] = {
+  def nack[T >: S <: Acknowledgeable] : Instruction[Failed] = {
     println("nacked")
     new Instruction
   }
@@ -32,16 +33,18 @@ object Instruction {
   sealed trait InstructionState
   object InstructionState {
     sealed trait New extends InstructionState
-    sealed trait Published extends Cancellable with Acknowledgable
-    sealed trait Cancellable extends InstructionState
+    sealed trait Published extends Cancellable with Acknowledgeable
     sealed trait Instructed extends Cancellable
     sealed trait Cancelled extends Terminated
-    sealed trait CancelSubmitted extends Acknowledgable
+    sealed trait CancelSubmitted extends Acknowledgeable
     sealed trait Failed extends Cancellable
     sealed trait NotInstructed extends Terminated
-    sealed trait Terminated extends InstructionState
-    sealed trait Acknowledgable extends InstructionState
-
+    //marker states
+    object Marker {
+      sealed trait Cancellable extends InstructionState
+      sealed trait Terminated extends InstructionState
+      sealed trait Acknowledgeable extends InstructionState
+    }
   }
 }
 
