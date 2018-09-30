@@ -11,7 +11,7 @@ class Instruction[S <: InstructionState] {
     new Instruction
   }
 
-  def acknowledge[T >: S <: Acknowledgable] : Instruction[Published] = {
+  def acknowledge[T >: S <: Acknowledgable] : Instruction[Instructed] = {
     println("acked")
     new Instruction
   }
@@ -47,10 +47,18 @@ object Instruction {
 
 object instructing extends App {
 
-  val i = new Instruction[InstructionState.New]
   println("\nFirst instruction flow---")
-  i.publish.acknowledge.cancel.acknowledge
+  val i = new Instruction[New]
+  val i2: Instruction[Published] = i.publish
+  val i3: Instruction[Instructed] = i2.acknowledge
+  val i4: Instruction[CancelSubmitted] = i2.cancel
+  val i5 = i2.acknowledge
+
+
   println("\nSecond instruction flow---")
-  i.publish.nack.cancel
+  val j = new Instruction[New]
+  val j2 : Instruction[Published] = j.publish
+  val j3 : Instruction[Failed] = j.nack
+  val j4  = j.cancel
 
 }
