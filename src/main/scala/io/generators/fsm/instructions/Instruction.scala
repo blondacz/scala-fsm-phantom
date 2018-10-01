@@ -14,7 +14,8 @@ case class Instruction[S <: MessageState, C <: ConfirmationState](ref: String) {
   def publish[T >: S <: New]: Instruction[Published,C] = this.copy()
   def ackNew[T >: S <: Published] : Instruction[Instructed,C] = this.copy()
   def ackCancel[T >: S <: CancelSubmitted] : Instruction[Cancelled,C] = this.copy()
-  def cancel[T >: S <: Cancellable] : Instruction[CancelSubmitted,Unconfirmed] = this.copy()
+  def cancel[T >: S <: Cancellable]: Instruction[CancelSubmitted, Unconfirmed] = this.copy()
+  def discard[T >: S <: Cancellable]: Instruction[NotInstructed, Unconfirmed] = this.copy()
   def nackNew[T >: S <: Published] : Instruction[Failed,C] = this.copy()
   def nackCancel[T >: S <: CancelSubmitted] : Instruction[NotInstructed,C] = this.copy()
   def confirm[T >: S <: Instructed] : Instruction[Instructed,Confirmed] = this.copy()
@@ -58,10 +59,17 @@ object instructing extends App {
   val i5 : Instruction[Cancelled,Unconfirmed] = i4.ackCancel
   i5.print
 
+  val a = new Instruction[New,Unconfirmed]("aRef")
+  val a2: Instruction[Published,Unconfirmed] = a.publish
+  val a3: Instruction[Instructed,Unconfirmed] = a2.ackNew
+  val a4: Instruction[CancelSubmitted,Unconfirmed] = a3.cancel
+  val a5 : Instruction[NotInstructed,Unconfirmed] = a4.nackCancel
+  a5.print
+
   val j = new Instruction[New,Unconfirmed]("bRef")
   val j2 : Instruction[Published,Unconfirmed] = j.publish
   val j3 : Instruction[Failed,Unconfirmed] = j2.nackNew
-  val j4  = j3.cancel
+  val j4: Instruction[NotInstructed,Unconfirmed] = j3.discard
   j4.print
 
   val k = new Instruction[New,Unconfirmed]("cRef")
