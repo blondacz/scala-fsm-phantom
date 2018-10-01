@@ -4,6 +4,8 @@ import io.generators.fsm.instructions.Instruction.ConfirmationState.{Confirmed, 
 import io.generators.fsm.instructions.Instruction.{ConfirmationState, MessageState}
 import io.generators.fsm.instructions.Instruction.MessageState._
 import io.generators.fsm.instructions.Instruction.MessageState.Marker._
+import ReportableInstances._
+import ReportableSyntax._
 
 
 case class Instruction[S <: MessageState, C <: ConfirmationState](ref: String) {
@@ -12,7 +14,7 @@ case class Instruction[S <: MessageState, C <: ConfirmationState](ref: String) {
   def publish[T >: S <: New]: Instruction[Published,C] = this.copy()
   def ackNew[T >: S <: Published] : Instruction[Instructed,C] = this.copy()
   def ackCancel[T >: S <: CancelSubmitted] : Instruction[Cancelled,C] = this.copy()
-  def cancel[T >: S <: Instructed] : Instruction[CancelSubmitted,Unconfirmed] = this.copy()
+  def cancel[T >: S <: Cancellable] : Instruction[CancelSubmitted,Unconfirmed] = this.copy()
   def nackNew[T >: S <: Published] : Instruction[Failed,C] = this.copy()
   def nackCancel[T >: S <: CancelSubmitted] : Instruction[NotInstructed,C] = this.copy()
   def confirm[T >: S <: Instructed] : Instruction[Instructed,Confirmed] = this.copy()
@@ -54,18 +56,20 @@ object instructing extends App {
   val i3: Instruction[Instructed,Unconfirmed] = i2.ackNew
   val i4: Instruction[CancelSubmitted,Unconfirmed] = i3.cancel
   val i5 : Instruction[Cancelled,Unconfirmed] = i4.ackCancel
-
+  i5.print
 
   val j = new Instruction[New,Unconfirmed]("bRef")
   val j2 : Instruction[Published,Unconfirmed] = j.publish
   val j3 : Instruction[Failed,Unconfirmed] = j2.nackNew
   val j4  = j3.cancel
-
+  j4.print
 
   val k = new Instruction[New,Unconfirmed]("cRef")
   val k2 : Instruction[Published,Unconfirmed] = k.publish
   val k3 : Instruction[Instructed,Unconfirmed] = k2.ackNew
   val k4 : Instruction[Instructed,Confirmed] = k3.confirm
+  val k5 : Instruction[Instructed,Confirmed] = k4.confirm
+  k5.print
 
   //val k5  = j3.cancel //fails compilation because we can't cancel confirmed instructions
 
