@@ -1,7 +1,8 @@
 # scala-fsm-phantom
 Finite State Machine Implemented in Scala using Phantom Types so there is no need for tests of basic transitions between states because compiler does not allow invalid transitions.
 
-Basic states for Instrurtion (SWIFT) are:
+Instruction FSM is actually two FSMs that should be cooperating:
+One for message state of the Instruction (SWIFT):
   <pre>
     New              =>       Failed
      ||
@@ -16,5 +17,15 @@ Basic states for Instrurtion (SWIFT) are:
      ||
      \/  
   Cancelled
+  </pre>
+  
+  One for confirmation  state (it is not possible to cancle):
+  <pre>
+  Unconfirmed             
+     ||
+     \/  
+  Confirmed <==
+     ||       ||
+     ==========
   </pre>
   
