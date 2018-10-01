@@ -1,7 +1,6 @@
 package io.generators.fsm.instructions
 
-import io.generators.fsm.instructions.V1Model.Instruction
-import io.generators.fsm.instructions.V1Model.Instruction.{ConfirmationState, MessageState}
+
 
 trait Reportable[T] {
   def report(t: T) : String
@@ -18,6 +17,8 @@ object ReportableSyntax {
 }
 
 object ReportableInstances {
-  implicit def instructionReportable[S <: MessageState,C <: ConfirmationState] : Reportable[Instruction[S,C]] =
-    (i: Instruction[S, C]) => i.toString.padTo(20,' ') + " MessageState: " + i.ms.runtimeClass.getSimpleName.padTo(15,' ') + " ConfirmationState: " + i.cs.runtimeClass.getSimpleName
+  implicit def instruction1Reportable[S <: V1Model.Instruction.MessageState,C <: V1Model.Instruction.ConfirmationState] : Reportable[V1Model.Instruction[S,C]] =
+    (i: V1Model.Instruction[S, C]) => i.toString.padTo(20,' ') + " MessageState: " + i.ms.runtimeClass.getSimpleName.padTo(15,' ') + " ConfirmationState: " + i.cs.runtimeClass.getSimpleName
+ implicit def instruction2Reportable[S <: V2Model.Instruction.MessageState,C <: V2Model.Instruction.ConfirmationState] : Reportable[V2Model.Instruction[S,C]] =
+    (i: V2Model.Instruction[S, C]) => i.toString.padTo(20,' ') + " MessageState: " + i.ms.runtimeClass.getSimpleName.padTo(15,' ') + " ConfirmationState: " + i.cs.runtimeClass.getSimpleName
 }
