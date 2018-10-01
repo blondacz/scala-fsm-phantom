@@ -8,7 +8,6 @@ import ReportableInstances._
 import ReportableSyntax._
 
 import scala.reflect.ClassTag
-import scala.reflect.runtime.universe.{New => SNew, _}
 
 case class Instruction[S <: MessageState, C <: ConfirmationState](ref: String)(implicit val ms: ClassTag[S], val cs: ClassTag[C]) {
 
@@ -24,12 +23,6 @@ case class Instruction[S <: MessageState, C <: ConfirmationState](ref: String)(i
 }
 
 object Instruction {
-
-
-  implicit class transitionOps[T](value: T){
-    def ~>[B](f: T => B): B = f(value)
-  }
-
   sealed trait ConfirmationState
   object ConfirmationState {
     sealed trait Unconfirmed extends ConfirmationState
