@@ -6,9 +6,9 @@ import io.generators.fsm.instructions.Instruction.MessageState._
 import io.generators.fsm.instructions.Instruction.MessageState.Marker._
 import ReportableInstances._
 import ReportableSyntax._
+import scala.reflect.runtime.universe.{New => SNew,_}
 
-
-case class Instruction[S <: MessageState, C <: ConfirmationState](ref: String) {
+case class Instruction[S <: MessageState, C <: ConfirmationState](ref: String)(implicit val ms: TypeTag[S], val cs: TypeTag[C]) {
 
   def failGeneration[T >: S <: New]: Instruction[Failed,C] = this.copy()
   def publish[T >: S <: New]: Instruction[Published,C] = this.copy()
@@ -22,6 +22,7 @@ case class Instruction[S <: MessageState, C <: ConfirmationState](ref: String) {
 }
 
 object Instruction {
+
 
   implicit class transitionOps[T](value: T){
     def ~>[B](f: T => B): B = f(value)

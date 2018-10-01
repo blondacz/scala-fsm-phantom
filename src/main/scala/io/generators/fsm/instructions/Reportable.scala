@@ -17,5 +17,6 @@ object ReportableSyntax {
 }
 
 object ReportableInstances {
-  implicit def instructionReportable[S <: MessageState,C <: ConfirmationState] : Reportable[Instruction[S,C]] = (i: Instruction[S, C]) => i.toString
+  implicit def instructionReportable[S <: MessageState,C <: ConfirmationState] : Reportable[Instruction[S,C]] =
+    (i: Instruction[S, C]) => i.toString + " MessageState: " + i.ms.tpe.toString + " ConfirmationState: " + i.cs.tpe.toString
 }
