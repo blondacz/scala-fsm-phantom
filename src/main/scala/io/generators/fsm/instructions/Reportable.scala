@@ -1,6 +1,7 @@
 package io.generators.fsm.instructions
 
-import io.generators.fsm.instructions.Instruction.{ConfirmationState, MessageState}
+import io.generators.fsm.instructions.V1Model.Instruction
+import io.generators.fsm.instructions.V1Model.Instruction.{ConfirmationState, MessageState}
 
 trait Reportable[T] {
   def report(t: T) : String
