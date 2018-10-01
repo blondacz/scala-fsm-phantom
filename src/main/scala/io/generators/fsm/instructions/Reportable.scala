@@ -18,5 +18,5 @@ object ReportableSyntax {
 
 object ReportableInstances {
   implicit def instructionReportable[S <: MessageState,C <: ConfirmationState] : Reportable[Instruction[S,C]] =
-    (i: Instruction[S, C]) => i.toString + " MessageState: " + i.ms.runtimeClass.getSimpleName.padTo(20,' ') + " ConfirmationState: " + i.cs.runtimeClass.getSimpleName
+    (i: Instruction[S, C]) => i.toString.padTo(20,' ') + " MessageState: " + i.ms.runtimeClass.getSimpleName.padTo(15,' ') + " ConfirmationState: " + i.cs.runtimeClass.getSimpleName
 }

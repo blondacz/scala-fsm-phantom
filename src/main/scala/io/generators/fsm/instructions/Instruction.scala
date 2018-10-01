@@ -23,6 +23,9 @@ case class Instruction[S <: MessageState, C <: ConfirmationState](ref: String)(i
 }
 
 object Instruction {
+
+  def swift(ref: String): Instruction[New, Unconfirmed] = new Instruction(ref)
+
   sealed trait ConfirmationState
   object ConfirmationState {
     sealed trait Unconfirmed extends ConfirmationState
@@ -55,12 +58,7 @@ object instructing extends App {
   val i5 : Instruction[Cancelled,Unconfirmed] = i4.ackCancel
   i5.print
 
-  val a = new Instruction[New,Unconfirmed]("aRef")
-  val a2: Instruction[Published,Unconfirmed] = a.publish
-  val a3: Instruction[Instructed,Unconfirmed] = a2.ackNew
-  val a4: Instruction[CancelSubmitted,Unconfirmed] = a3.cancel
-  val a5 : Instruction[NotInstructed,Unconfirmed] = a4.nackCancel
-  a5.print
+  Instruction.swift("someRef").publish.ackNew.cancel.nackCancel.print
 
   val j = new Instruction[New,Unconfirmed]("bRef")
   val j2 : Instruction[Published,Unconfirmed] = j.publish
@@ -75,8 +73,8 @@ object instructing extends App {
   val k5 : Instruction[Instructed,Confirmed] = k4.confirm
   k5.print
 
+
+  Instruction.swift("xRef").failGeneration.discard.print
+
   //val k5  = j3.cancel //fails compilation because we can't cancel confirmed instructions
-
-
-
 }
