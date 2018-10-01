@@ -6,9 +6,11 @@ import io.generators.fsm.instructions.Instruction.MessageState._
 import io.generators.fsm.instructions.Instruction.MessageState.Marker._
 import ReportableInstances._
 import ReportableSyntax._
-import scala.reflect.runtime.universe.{New => SNew,_}
 
-case class Instruction[S <: MessageState, C <: ConfirmationState](ref: String)(implicit val ms: TypeTag[S], val cs: TypeTag[C]) {
+import scala.reflect.ClassTag
+import scala.reflect.runtime.universe.{New => SNew, _}
+
+case class Instruction[S <: MessageState, C <: ConfirmationState](ref: String)(implicit val ms: ClassTag[S], val cs: ClassTag[C]) {
 
   def failGeneration[T >: S <: New]: Instruction[Failed,C] = this.copy()
   def publish[T >: S <: New]: Instruction[Published,C] = this.copy()
