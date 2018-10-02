@@ -19,24 +19,25 @@ object V2Model {
   }
 
   object Instruction {
+    //class tags are required if noty concrete state is specified, the cleanest way is to use context bounds
 
-    def failGeneration[C <: ConfirmationState : ClassTag, S <: New : ClassTag](i: Instruction[S, C]) : Instruction[Failed, C] = i.copy()
+    def failGeneration[C <: ConfirmationState : ClassTag, S <: New ](i: Instruction[S, C]) : Instruction[Failed, C] = i.copy()
 
-    def publish[C <: ConfirmationState : ClassTag, S <: New : ClassTag](i: Instruction[S, C]): Instruction[Published, C] = i.copy()
+    def publish[C <: ConfirmationState : ClassTag, S <: New ](i: Instruction[S, C]): Instruction[Published, C] = i.copy()
 
-    def ackNew[C <: ConfirmationState: ClassTag,  S <: Published: ClassTag](i: Instruction[S, C]): Instruction[Instructed, C] = i.copy()
+    def ackNew[C <: ConfirmationState: ClassTag,  S <: Published](i: Instruction[S, C]): Instruction[Instructed, C] = i.copy()
 
-    def ackCancel[C <: ConfirmationState: ClassTag, S <: CancelSubmitted: ClassTag](i: Instruction[S, C]): Instruction[Cancelled, C] = i.copy()
+    def ackCancel[C <: ConfirmationState: ClassTag, S <: CancelSubmitted](i: Instruction[S, C]): Instruction[Cancelled, C] = i.copy()
 
-    def cancel[ S <: Instructed: ClassTag,  C <: Unconfirmed: ClassTag](i: Instruction[S, C]): Instruction[CancelSubmitted, C] = i.copy()
+    def cancel[ S <: Instructed,  C <: Unconfirmed](i: Instruction[S, C]): Instruction[CancelSubmitted, Unconfirmed] = i.copy()
 
-    def discard[ C <: ConfirmationState: ClassTag, S <: Cancellable: ClassTag](i: Instruction[S, C]): Instruction[NotInstructed, Unconfirmed] = i.copy()
+    def discard[ C <: ConfirmationState: ClassTag, S <: Cancellable](i: Instruction[S, C]): Instruction[NotInstructed, Unconfirmed] = i.copy()
 
-    def nackNew[C <: ConfirmationState: ClassTag,S <: Published: ClassTag](i: Instruction[S, C]): Instruction[Failed, C] = i.copy()
+    def nackNew[C <: ConfirmationState: ClassTag,S <: Published](i: Instruction[S, C]): Instruction[Failed, C] = i.copy()
 
-    def nackCancel[C <: ConfirmationState: ClassTag, S <: CancelSubmitted: ClassTag](i: Instruction[S, C]): Instruction[NotInstructed, C] = i.copy()
+    def nackCancel[C <: ConfirmationState: ClassTag, S <: CancelSubmitted](i: Instruction[S, C]): Instruction[NotInstructed, C] = i.copy()
 
-    def confirm[C <: ConfirmationState: ClassTag, S <: Instructed: ClassTag](i: Instruction[S, C]): Instruction[Instructed, Confirmed] = i.copy()
+    def confirm[C <: ConfirmationState: ClassTag, S <: Instructed](i: Instruction[S, C]): Instruction[Instructed, Confirmed] = i.copy()
 
     def swift(ref: String): Instruction[New, Unconfirmed] = new Instruction(ref)
 
