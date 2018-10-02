@@ -20,23 +20,23 @@ object V2Model {
 
   object Instruction {
 
-    def failGeneration[C <: ConfirmationState, S <: New](i: Instruction[S, C])(implicit ms: ClassTag[S], cs: ClassTag[C]): Instruction[Failed, C] = i.copy()
+    def failGeneration[C <: ConfirmationState : ClassTag, S <: New : ClassTag](i: Instruction[S, C]) : Instruction[Failed, C] = i.copy()
 
-    def publish[C <: ConfirmationState, S <: New](i: Instruction[S, C])(implicit ms: ClassTag[S], cs: ClassTag[C]): Instruction[Published, C] = i.copy()
+    def publish[C <: ConfirmationState : ClassTag, S <: New : ClassTag](i: Instruction[S, C]): Instruction[Published, C] = i.copy()
 
-    def ackNew[C <: ConfirmationState,  S <: Published](i: Instruction[S, C])(implicit ms: ClassTag[S], cs: ClassTag[C]): Instruction[Instructed, C] = i.copy()
+    def ackNew[C <: ConfirmationState: ClassTag,  S <: Published: ClassTag](i: Instruction[S, C]): Instruction[Instructed, C] = i.copy()
 
-    def ackCancel[C <: ConfirmationState, S <: CancelSubmitted](i: Instruction[S, C])(implicit ms: ClassTag[S], cs: ClassTag[C]): Instruction[Cancelled, C] = i.copy()
+    def ackCancel[C <: ConfirmationState: ClassTag, S <: CancelSubmitted: ClassTag](i: Instruction[S, C]): Instruction[Cancelled, C] = i.copy()
 
-    def cancel[ S <: Instructed,  C <: Unconfirmed](i: Instruction[S, C])(implicit ms: ClassTag[S], cs: ClassTag[C]): Instruction[CancelSubmitted, C] = i.copy()
+    def cancel[ S <: Instructed: ClassTag,  C <: Unconfirmed: ClassTag](i: Instruction[S, C]): Instruction[CancelSubmitted, C] = i.copy()
 
-    def discard[ C <: ConfirmationState, S <: Cancellable](i: Instruction[S, C])(implicit ms: ClassTag[S], cs: ClassTag[C]): Instruction[NotInstructed, Unconfirmed] = i.copy()
+    def discard[ C <: ConfirmationState: ClassTag, S <: Cancellable: ClassTag](i: Instruction[S, C]): Instruction[NotInstructed, Unconfirmed] = i.copy()
 
-    def nackNew[C <: ConfirmationState,S <: Published](i: Instruction[S, C])(implicit ms: ClassTag[S], cs: ClassTag[C]): Instruction[Failed, C] = i.copy()
+    def nackNew[C <: ConfirmationState: ClassTag,S <: Published: ClassTag](i: Instruction[S, C]): Instruction[Failed, C] = i.copy()
 
-    def nackCancel[C <: ConfirmationState, S <: CancelSubmitted](i: Instruction[S, C])(implicit ms: ClassTag[S], cs: ClassTag[C]): Instruction[NotInstructed, C] = i.copy()
+    def nackCancel[C <: ConfirmationState: ClassTag, S <: CancelSubmitted: ClassTag](i: Instruction[S, C]): Instruction[NotInstructed, C] = i.copy()
 
-    def confirm[C <: ConfirmationState, S <: Instructed](i: Instruction[S, C])(implicit ms: ClassTag[S], cs: ClassTag[C]): Instruction[Instructed, Confirmed] = i.copy()
+    def confirm[C <: ConfirmationState: ClassTag, S <: Instructed: ClassTag](i: Instruction[S, C]): Instruction[Instructed, Confirmed] = i.copy()
 
     def swift(ref: String): Instruction[New, Unconfirmed] = new Instruction(ref)
 
@@ -55,26 +55,17 @@ object V2Model {
     object MessageState {
 
       sealed trait New extends MessageState
-
       sealed trait Published extends Cancellable
-
       sealed trait Instructed extends Cancellable
-
       sealed trait Cancelled extends Final
-
       sealed trait CancelSubmitted extends MessageState
-
       sealed trait Failed extends Cancellable
-
       sealed trait NotInstructed extends Final
 
       //marker states
       object Marker {
-
         sealed trait Cancellable extends MessageState
-
         sealed trait Final extends MessageState
-
       }
 
     }
