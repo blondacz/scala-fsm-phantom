@@ -1,12 +1,11 @@
 package io.generators.fsm.instructions
 
 import io.generators.fsm.instructions.V1Model.Instruction.ConfirmationState.{Confirmed, Unconfirmed}
-import io.generators.fsm.instructions.V1Model.Instruction.{ConfirmationState, MessageState}
+import io.generators.fsm.instructions.V1Model.Instruction.{ConfirmationState, MessageState, swift}
 import io.generators.fsm.instructions.V1Model.Instruction.MessageState._
 import io.generators.fsm.instructions.V1Model.Instruction.MessageState.Marker._
 import ReportableInstances._
 import ReportableSyntax._
-import io.generators.fsm.instructions.V1Model.Instruction
 
 import scala.reflect.ClassTag
 
@@ -71,30 +70,15 @@ object V1Model {
 }
 object instructingV1Model extends App {
 
-  val i = new Instruction[New, Unconfirmed]("aRef")
-  val i2: Instruction[Published, Unconfirmed] = i.publish
-  val i3: Instruction[Instructed, Unconfirmed] = i2.ackNew
-  val i4: Instruction[CancelSubmitted, Unconfirmed] = i3.cancel
-  val i5: Instruction[Cancelled, Unconfirmed] = i4.ackCancel
-  i5.print
+  swift("aRef").publish.ackNew.cancel.ackCancel.print
 
-  Instruction.swift("someRef").publish.ackNew.cancel.nackCancel
+  swift("someRef").publish.ackNew.cancel.nackCancel.print
 
-  val j = new Instruction[New, Unconfirmed]("bRef")
-  val j2: Instruction[Published, Unconfirmed] = j.publish
-  val j3: Instruction[Failed, Unconfirmed] = j2.nackNew
-  val j4: Instruction[NotInstructed, Unconfirmed] = j3.discard
-  j4.print
+  swift("bRef").publish.nackNew.discard.print
 
-  val k = new Instruction[New, Unconfirmed]("cRef")
-  val k2: Instruction[Published, Unconfirmed] = k.publish
-  val k3: Instruction[Instructed, Unconfirmed] = k2.ackNew
-  val k4: Instruction[Instructed, Confirmed] = k3.confirm
-  val k5: Instruction[Instructed, Confirmed] = k4.confirm
-  k5.print
+  swift("cRef").publish.ackNew.confirm.confirm.print
 
+  swift("xRef").failGeneration.discard.print
 
-  Instruction.swift("xRef").failGeneration.discard.print
-
-  //val k6  = k5.cancel //fails compilation because we can't cancel confirmed instructions
+  //swift("xRef").publish.ackNew.confirm.cancel //fails compilation because we can't cancel confirmed instructions
 }
