@@ -4,6 +4,7 @@ package io.generators.fsm.instructions
 import ReportableInstances._
 import ReportableSyntax._
 import cats.Eval
+import cats.Eval.now
 import cats.data.{IndexedStateT => State}
 import io.generators.fsm.instructions.V3Model.{Instruction, InstructionType, MessageTransition}
 import io.generators.fsm.instructions.V3Model.Instruction.ConfirmationState.{Unconfirmed, _}
@@ -16,12 +17,12 @@ import scala.reflect.ClassTag
 
 object V3Model {
 
-  type Event = String
+  type Event = Seq[String]
 
   type InstructionType = Instruction[_ <: V3Model.Instruction.MessageState,_ <: V3Model.Instruction.ConfirmationState]
 
-  type MessageTransition[OMS <: MessageState,NMS <: MessageState,C <: ConfirmationState] = State[Eval,Instruction[OMS,C],Instruction[NMS,C],Unit]
-  type ConfirmationTransition[MS <: MessageState,OCS <: ConfirmationState,NCS <: ConfirmationState] = State[Eval,Instruction[MS,OCS],Instruction[MS,NCS],Unit]
+  type MessageTransition[OMS <: MessageState,NMS <: MessageState,C <: ConfirmationState] = State[Eval,Instruction[OMS,C],Instruction[NMS,C],Event]
+  type ConfirmationTransition[MS <: MessageState,OCS <: ConfirmationState,NCS <: ConfirmationState] = State[Eval,Instruction[MS,OCS],Instruction[MS,NCS],Event]
 
   case class Instruction[S <: MessageState, C <: ConfirmationState](ref: String)(implicit val ms: ClassTag[S], val cs: ClassTag[C])
 
@@ -51,15 +52,15 @@ object V3Model {
 
       def swift(ref: String): Instruction[New, Unconfirmed] = new Instruction(ref)
 
-      def publish : MessageTransition[New,Published,Unconfirmed] = State.modify(_.copy())
-      def ackNew[C <: ConfirmationState : ClassTag] : MessageTransition[Published,Instructed,C] = State.modify(i => i.copy(ref = i.ref + "-acked"))
-      def confirm[C <: ConfirmationState ] : ConfirmationTransition[Instructed,C,Confirmed] = State.modify(_.copy())
-      def failGeneration: MessageTransition[New,Failed,Unconfirmed]  = State.modify(_.copy())
-      def ackCancel[C <: ConfirmationState : ClassTag]  : MessageTransition[CancelSubmitted, Cancelled,C]  = State.modify(_.copy())
-      def cancel : MessageTransition[Instructed, CancelSubmitted, Unconfirmed] =  State.modify(_.copy())
-      def discard[C <: ConfirmationState: ClassTag ]:  MessageTransition[Failed, NotInstructed, C]  = State.modify(_.copy())
-      def nackNew[C <: ConfirmationState: ClassTag ] : MessageTransition[Published,Failed,C] = State.modify(_.copy())
-      def nackCancel[C <: ConfirmationState: ClassTag ] : MessageTransition[CancelSubmitted,NotInstructed,C] = State.modify(_.copy())
+      def publish : MessageTransition[New,Published,Unconfirmed] = State(i => now((i.copy(),Seq("published"))))
+      def ackNew[C <: ConfirmationState : ClassTag] : MessageTransition[Published,Instructed,C] = State(i => now((i.copy(),Seq("acked"))))
+      def confirm[C <: ConfirmationState ] : ConfirmationTransition[Instructed,C,Confirmed] = State(i => now((i.copy(),Seq("confirmed"))))
+      def failGeneration: MessageTransition[New,Failed,Unconfirmed]  = State(i => now((i.copy(),Seq("failed generation"))))
+      def ackCancel[C <: ConfirmationState : ClassTag]  : MessageTransition[CancelSubmitted, Cancelled,C]  = State(i => now((i.copy(),Seq("cancel acked"))))
+      def cancel : MessageTransition[Instructed, CancelSubmitted, Unconfirmed] =  State(i => now((i.copy(),Seq("cancel submitted"))))
+      def discard[C <: ConfirmationState: ClassTag ]:  MessageTransition[Failed, NotInstructed, C]  = State(i => now((i.copy(),Seq("discarded"))))
+      def nackNew[C <: ConfirmationState: ClassTag ] : MessageTransition[Published,Failed,C] = State(i => now((i.copy(),Seq("new nacked"))))
+      def nackCancel[C <: ConfirmationState: ClassTag ] : MessageTransition[CancelSubmitted,NotInstructed,C] = State(i => now((i.copy(),Seq("cancel nacked"))))
     }
 
   }
@@ -68,45 +69,45 @@ object V3Model {
   object instructingV3Model extends App {
 
     val process1 = for {
-      _ <- publish
-      _ <- ackNew
-      _ <- cancel
-      _ <- ackCancel
-    } yield ()
+      a <- publish
+      b <- ackNew
+      c <- cancel
+      d <- ackCancel
+    } yield a ++ b ++ c ++ d
 
-   process1.runS(swift("x")).value.print
+   process1.run(swift("x")).value.print
 
     val process2 = for {
-      _ <- publish
-      _ <- ackNew
-      _ <- cancel
-      _ <- nackCancel
-    } yield ()
+      a <- publish
+      b <- ackNew
+      c <- cancel
+      d <- nackCancel
+    } yield a ++ b ++ c ++ d
 
-   process2.runS(swift("x")).value.print
+   process2.run(swift("x")).value.print
 
     val process3 = for {
-      _ <- publish
-      _ <- nackNew
-      _ <- discard
-    } yield ()
+      a <- publish
+      b <- nackNew
+      c <- discard
+    } yield a ++ b ++ c
 
-   process3.runS(swift("x")).value.print
+   process3.run(swift("x")).value.print
 
  val process4 = for {
-      _ <- publish
-      _ <- ackNew
-      _ <- confirm
-      _ <- confirm
-    } yield ()
+      a <- publish
+      b <- ackNew
+      c <- confirm
+      d <- confirm
+    } yield a ++ b ++ c ++ d
 
-   process4.runS(swift("x")).value.print
+   process4.run(swift("x")).value.print
 
     val process5 = for {
-      _ <- failGeneration
-      _ <- discard
-    } yield ()
+      a <- failGeneration
+      b <- discard
+    } yield a ++ b
 
-   process5.runS(swift("x")).value.print
+   process5.run(swift("x")).value.print
 
   }
