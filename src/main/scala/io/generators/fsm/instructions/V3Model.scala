@@ -4,7 +4,7 @@ package io.generators.fsm.instructions
 import ReportableInstances._
 import ReportableSyntax._
 import cats.Eval
-import cats.data.IndexedStateT
+import cats.data.{IndexedStateT => State}
 import io.generators.fsm.instructions.V3Model.Instruction
 import io.generators.fsm.instructions.V3Model.Instruction.ConfirmationState._
 import io.generators.fsm.instructions.V3Model.Instruction.MessageState._
@@ -15,7 +15,9 @@ import io.generators.fsm.instructions.V3Model.Instruction.MessageState.Marker._
 import scala.reflect.ClassTag
 
 object V3Model {
-  type InstructionTransition[OMS <: MessageState,NMS <: MessageState,OCS <: ConfirmationState,NCS <: ConfirmationState] = IndexedStateT[Eval,Instruction[OMS,OCS],Instruction[NMS,NCS],Unit]
+
+  type MessageTransition[OMS <: MessageState,NMS <: MessageState,C <: ConfirmationState] = State[Eval,Instruction[OMS,C],Instruction[NMS,C],Unit]
+  type ConfirmationTransition[MS <: MessageState,OCS <: ConfirmationState,NCS <: ConfirmationState] = State[Eval,Instruction[MS,OCS],Instruction[MS,NCS],Unit]
 
   case class Instruction[S <: MessageState, C <: ConfirmationState](ref: String)(implicit val ms: ClassTag[S], val cs: ClassTag[C])
 
@@ -42,9 +44,9 @@ object V3Model {
         sealed trait Final extends MessageState
       }
 
-      def publish : InstructionTransition[New,Published,Unconfirmed,Unconfirmed] = IndexedStateT.set(Instruction("x"))
-      def ackNew[C <: ConfirmationState : ClassTag] : InstructionTransition[Published,Instructed,C,C] = IndexedStateT.set(Instruction("x"))
-      def confirm[C <: ConfirmationState ] : InstructionTransition[Instructed,Instructed,C,Confirmed] = IndexedStateT.set(Instruction("x"))
+      def publish : MessageTransition[New,Published,Unconfirmed] = State.modify(_.copy())
+      def ackNew[C <: ConfirmationState : ClassTag] : MessageTransition[Published,Instructed,C] = State.modify(i => i.copy(ref = i.ref + "-acked"))
+      def confirm[C <: ConfirmationState ] : ConfirmationTransition[Instructed,C,Confirmed] = State.modify(_.copy())
 
     }
 
