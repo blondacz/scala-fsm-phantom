@@ -6,40 +6,55 @@ import io.generators.fsm.instructions.V2Model.Instruction.MessageState.{New, _}
 import io.generators.fsm.instructions.V2Model.Instruction.MessageState.Marker._
 import ReportableInstances._
 import ReportableSyntax._
+import cats.Monoid
+import cats.instances.all._
 import io.generators.fsm.instructions.V2Model.Instruction._
 
 import scala.reflect.ClassTag
 
 object V2Model {
 
+  type Events = Seq[String]
+
+  implicit val eventsMonoid: Monoid[Events] = new Monoid[Events] {
+    override def empty: Events = Nil
+
+    override def combine(x: Events, y: Events): Events = x ++ y
+  }
+
+  type StateAndEvents[M <: MessageState, C <: ConfirmationState] = (Instruction[M,C],Events)
+
   case class Instruction[S <: MessageState, C <: ConfirmationState](ref: String)(implicit val ms: ClassTag[S], val cs: ClassTag[C])
 
-  implicit class transitionOps[T](value: T) {
-    def ~>[B](f: T => B): B = f(value)
+  implicit class transitionOps[A,B](value: (A,B)) {
+    def ~>[C](f: A => (C,B))(implicit m: Monoid[B]): (C,B) = {
+      val (s,e) = f(value._1)
+      (s,m.combine(value._2,e))
+    }
   }
 
   object Instruction {
     //class tags are required if noty concrete state is specified, the cleanest way is to use context bounds
 
-    def failGeneration[C <: ConfirmationState : ClassTag, S <: New ](i: Instruction[S, C]) : Instruction[Failed, C] = i.copy()
+    def failGeneration[C <: ConfirmationState : ClassTag, S <: New ](i: Instruction[S, C]) : StateAndEvents[Failed, C] = (i.copy(),Seq("failed generation"))
 
-    def publish[C <: ConfirmationState : ClassTag, S <: New ](i: Instruction[S, C]): Instruction[Published, C] = i.copy()
+    def publish[C <: ConfirmationState : ClassTag, S <: New ](i: Instruction[S, C]): StateAndEvents[Published, C] = (i.copy(),Seq("published"))
 
-    def ackNew[C <: ConfirmationState: ClassTag,  S <: Published](i: Instruction[S, C]): Instruction[Instructed, C] = i.copy()
+    def ackNew[C <: ConfirmationState: ClassTag,  S <: Published](i: Instruction[S, C]): StateAndEvents[Instructed, C] = (i.copy(),Seq("new acked"))
 
-    def ackCancel[C <: ConfirmationState: ClassTag, S <: CancelSubmitted](i: Instruction[S, C]): Instruction[Cancelled, C] = i.copy()
+    def ackCancel[C <: ConfirmationState: ClassTag, S <: CancelSubmitted](i: Instruction[S, C]): StateAndEvents[Cancelled, C] = (i.copy(),Seq("cancel acked"))
 
-    def cancel[ S <: Instructed,  C <: Unconfirmed](i: Instruction[S, C]): Instruction[CancelSubmitted, Unconfirmed] = i.copy()
+    def cancel[ S <: Instructed,  C <: Unconfirmed : ClassTag](i: Instruction[S, C]): StateAndEvents[CancelSubmitted, C] = (i.copy(),Seq("cancel submitted"))
 
-    def discard[ C <: ConfirmationState: ClassTag, S <: Cancellable](i: Instruction[S, C]): Instruction[NotInstructed, Unconfirmed] = i.copy()
+    def discard[ C <: ConfirmationState: ClassTag, S <: Cancellable](i: Instruction[S, C]): StateAndEvents[NotInstructed, C] = (i.copy(),Seq("discarded"))
 
-    def nackNew[C <: ConfirmationState: ClassTag,S <: Published](i: Instruction[S, C]): Instruction[Failed, C] = i.copy()
+    def nackNew[C <: ConfirmationState: ClassTag,S <: Published](i: Instruction[S, C]): StateAndEvents[Failed, C] = (i.copy(),Seq("new nacked"))
 
-    def nackCancel[C <: ConfirmationState: ClassTag, S <: CancelSubmitted](i: Instruction[S, C]): Instruction[NotInstructed, C] = i.copy()
+    def nackCancel[C <: ConfirmationState: ClassTag, S <: CancelSubmitted](i: Instruction[S, C]): StateAndEvents[NotInstructed, C] = (i.copy(),Seq("discarded"))
 
-    def confirm[C <: ConfirmationState: ClassTag, S <: Instructed](i: Instruction[S, C]): Instruction[Instructed, Confirmed] = i.copy()
+    def confirm[C <: ConfirmationState: ClassTag, S <: Instructed : ClassTag](i: Instruction[S, C]): StateAndEvents[S, Confirmed] = (i.copy(),Seq("confirmed"))
 
-    def swift(ref: String): Instruction[New, Unconfirmed] = new Instruction(ref)
+    def swift(ref: String): StateAndEvents[New, Unconfirmed]= (new Instruction(ref),Nil)
 
     sealed trait ConfirmationState
 
@@ -75,6 +90,7 @@ object V2Model {
 }
 
 object instructingV2Model extends App {
+  import V2Model._
   (swift("aref") ~> publish ~> ackNew ~> cancel ~> ackCancel).print
   (swift("someRef") ~> publish ~> ackNew ~> cancel ~> nackCancel).print
   (swift("bRef") ~> publish ~> nackNew ~> discard).print
