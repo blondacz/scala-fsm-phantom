@@ -16,22 +16,10 @@ object V2Model {
 
   type Events = Seq[String]
 
-  implicit val eventsMonoid: Monoid[Events] = new Monoid[Events] {
-    override def empty: Events = Nil
-
-    override def combine(x: Events, y: Events): Events = x ++ y
-  }
-
   type StateAndEvents[M <: MessageState, C <: ConfirmationState] = (Instruction[M,C],Events)
 
   case class Instruction[S <: MessageState, C <: ConfirmationState](ref: String)(implicit val ms: ClassTag[S], val cs: ClassTag[C])
 
-  implicit class transitionOps[A,B](value: (A,B)) {
-    def ~>[C](f: A => (C,B))(implicit m: Monoid[B]): (C,B) = {
-      val (s,e) = f(value._1)
-      (s,m.combine(value._2,e))
-    }
-  }
 
   object Instruction {
     //class tags are required if noty concrete state is specified, the cleanest way is to use context bounds
@@ -86,6 +74,19 @@ object V2Model {
 
     }
 
+  }
+
+  implicit val eventsMonoid: Monoid[Events] = new Monoid[Events] {
+    override def empty: Events = Nil
+
+    override def combine(x: Events, y: Events): Events = x ++ y
+  }
+
+  implicit class transitionOps[A,B](value: (A,B)) {
+    def ~>[C](f: A => (C,B))(implicit m: Monoid[B]): (C,B) = {
+      val (s,e) = f(value._1)
+      (s,m.combine(value._2,e))
+    }
   }
 }
 
